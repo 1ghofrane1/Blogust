@@ -25,12 +25,18 @@
     background-color: var(--bg);
     height: calc(100vh - 100px);
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 50px;
+    font-size: 36px;
 }
 @media screen and (max-width: 640px){
     .burger{
         display: flex;
     }
-    .links{
+    .link{
         display: none;
     } 
 }
