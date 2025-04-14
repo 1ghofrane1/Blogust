@@ -4,27 +4,22 @@ import { NextResponse } from "next/server";
 
 export const GET = async (req) => {
   const { searchParams } = new URL(req.url);
-
-  const page = searchParams.get("page");
+  const page = parseInt(searchParams.get("page") || "1");
   const cat = searchParams.get("cat");
+  const userEmail = searchParams.get("userEmail");
 
   const ppp = 2;
 
   const query = {
-    take: ppp,
-    skip: ppp * (page - 1),
     where: {
       ...(cat && { catSlug: cat }),
+      ...(userEmail && { userEmail }),
     },
+    orderBy: { createdAt: "desc" },
+    include: { user: true },
+    ...(userEmail ? {} : { take: ppp, skip: ppp * (page - 1) }),
   };
 
-
-
-
-
-
-  
-  
   try {
     const [posts, count] = await prisma.$transaction([
       prisma.post.findMany(query),
@@ -38,13 +33,6 @@ export const GET = async (req) => {
     );
   }
 };
-
-
-
-
-
-
-
 
 
 

@@ -28,12 +28,12 @@ const Footer = () => {
           <span className={styles.listTitle}>Links</span>
           <Link href="/">Home</Link>
           <Link href="/">Blog</Link>
-          <Link href="/">About</Link>
-          <Link href="/">Contact</Link>
+          <Link href="/">About Us </Link>
+          <Link href="/">Contact Us</Link>
         </div>
         <div className={styles.list}>
           <span className={styles.listTitle}>Tags</span>
-          <Link href="/">Style</Link>
+          <Link href="/">Lifestyle</Link>
           <Link href="/">Fashion</Link>
           <Link href="/">Coding</Link>
           <Link href="/">Travel</Link>

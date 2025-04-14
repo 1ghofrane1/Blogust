@@ -17,6 +17,7 @@ const Auth = () => {
             ) : (
                 <>
                 <Link href="/write">Write</Link>
+                <Link href="/my-blogs">My Blogs</Link>
                 <span className={styles.link} onClick={signOut}>
                     Logout
                 </span>
@@ -31,12 +32,13 @@ const Auth = () => {
                     <div className={styles.responsiveMenu}>
                         <Link href="/" >Home</Link>
                         <Link href="/about">About</Link>
-                        <Link href="/contact">Contact</Link>
-                        {status==="notauthenticated" ? (
+                        
+                        {status==="unauthenticated" ? (
                             <Link href="/login">Login</Link>) : 
                                 (
                                     <>
                                     <Link href="/write">Write</Link>
+                                    <Link href="/my-blogs">My Blogs</Link>
                                     <span className={styles.link}>Logout</span>
                                     </>
                                 )
