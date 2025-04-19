@@ -28,6 +28,8 @@ const EditPost = () => {
   const [value, setValue] = useState("");
   const [title, setTitle] = useState("");
   const [catSlug, setCatSlug] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const editor = useEditor({
     extensions: [
@@ -74,14 +76,16 @@ const EditPost = () => {
         (snapshot) => {
           const progress =
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log("Upload is " + progress + "% done");
+          setUploadProgress(progress);
         },
         (error) => {
           console.error(error);
+          setUploadProgress(0);
         },
         () => {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             setMedia(downloadURL);
+            setUploadProgress(0);
           });
         }
       );
@@ -90,71 +94,146 @@ const EditPost = () => {
     if (file) upload();
   }, [file]);
 
-  if (status === "loading") return <div className={styles.loading}>Loading...</div>;
-  if (status === "unauthenticated") router.push("/");
+  if (status === "loading") {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p>Loading editor...</p>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    router.push("/");
+    return null;
+  }
 
   const handleUpdate = async () => {
-    const res = await fetch(`/api/posts/${slug}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        title,
-        desc: value,
-        img: media,
-        catSlug,
-      }),
-    });
+    if (!title.trim()) {
+      alert("Please add a title");
+      return;
+    }
+    
+    if (!value.trim()) {
+      alert("Please add some content");
+      return;
+    }
 
-    if (res.status === 200) {
-      const data = await res.json();
-      router.push(`/posts/${data.slug}`);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/posts/${slug}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title,
+          desc: value,
+          img: media,
+          catSlug,
+        }),
+      });
+
+      if (res.status === 200) {
+        const data = await res.json();
+        router.push(`/posts/${data.slug}`);
+      } else {
+        throw new Error("Failed to update post");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className={styles.container}>
-      <input
-        type="text"
-        placeholder="Title"
-        className={styles.input}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <select
-        className={styles.select}
-        value={catSlug}
-        onChange={(e) => setCatSlug(e.target.value)}
-      >
-        <option value="lifestyle">lifestyle</option>
-        <option value="fashion">fashion</option>
-        <option value="food">food</option>
-        <option value="culture">culture</option>
-        <option value="travel">travel</option>
-        <option value="coding">coding</option>
-      </select>
-      <div className={styles.editor}>
-        <button className={styles.button} onClick={() => setOpen(!open)}>
-          <Image src="/plus.png" alt="plus" width={16} height={16} />
-        </button>
+      <div className={styles.header}>
+        <h1 className={styles.pageTitle}>Edit Post</h1>
+      </div>
 
-        {open && (
-          <div className={styles.add}>
-            <input
-              type="file"
-              id="image"
-              onChange={(e) => setFile(e.target.files[0])}
-              style={{ display: "none" }}
-            />
-            <label htmlFor="image" className={styles.addButton}>
-              <Image src="/image.png" alt="plus" width={16} height={16} />
-            </label>
+      <div className={styles.formGroup}>
+        <input
+          type="text"
+          placeholder="Your amazing title..."
+          className={styles.input}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <div className={styles.selectContainer}>
+          <select
+            className={styles.select}
+            value={catSlug}
+            onChange={(e) => setCatSlug(e.target.value)}
+          >
+            <option value="lifestyle">Lifestyle</option>
+            <option value="fashion">Fashion</option>
+            <option value="food">Food</option>
+            <option value="culture">Culture</option>
+            <option value="travel">Travel</option>
+            <option value="coding">Coding</option>
+          </select>
+          <span className={styles.selectArrow}>▼</span>
+        </div>
+      </div>
+
+      <div className={styles.editorContainer}>
+        <div className={styles.toolbar}>
+          <button 
+            className={`${styles.toolbarButton} ${open ? styles.active : ''}`} 
+            onClick={() => setOpen(!open)}
+            aria-label="Add media"
+          >
+            <Image src="/plus.png" alt="plus" width={20} height={20} />
+          </button>
+
+          {open && (
+            <div className={styles.mediaOptions}>
+              <input
+                type="file"
+                id="image"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files[0])}
+                style={{ display: "none" }}
+              />
+              <label htmlFor="image" className={styles.mediaButton}>
+                <Image src="/image.png" alt="Add image" width={20} height={20} />
+                <span>Image</span>
+              </label>
+            </div>
+          )}
+        </div>
+
+        {uploadProgress > 0 && (
+          <div className={styles.progressBarContainer}>
+            <div 
+              className={styles.progressBar}
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+            <span className={styles.progressText}>{Math.round(uploadProgress)}%</span>
           </div>
         )}
 
-        <EditorContent editor={editor} className={styles.textArea} />
+        <div className={styles.editorContent}>
+          <EditorContent editor={editor} className={styles.textArea} />
+        </div>
       </div>
-      <button className={styles.publish} onClick={handleUpdate}>
-        Update
-      </button>
+
+      <div className={styles.footer}>
+        <button 
+          className={styles.publishButton} 
+          onClick={handleUpdate}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <span className={styles.spinnerSmall}></span>
+              Updating...
+            </>
+          ) : (
+            'Update Post'
+          )}
+        </button>
+      </div>
     </div>
   );
 };

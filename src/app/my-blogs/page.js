@@ -27,11 +27,11 @@ const MyBlogsPage = () => {
         `/api/posts?userEmail=${session.user.email}`,
         { cache: "no-store" }
       );
-      
+
       if (!res.ok) {
         throw new Error('Failed to fetch posts');
       }
-      
+
       const data = await res.json();
       setPosts(data.posts || []);
     } catch (error) {
@@ -47,7 +47,7 @@ const MyBlogsPage = () => {
         const res = await fetch(`/api/posts/${slug}`, {
           method: "DELETE",
         });
-  
+
         if (res.ok) {
           fetchUserPosts();
         } else {
@@ -60,7 +60,6 @@ const MyBlogsPage = () => {
       }
     }
   };
-  
 
   if (status === 'loading' || loading) {
     return <div className={styles.loading}>Loading...</div>;
@@ -104,10 +103,15 @@ const MyBlogsPage = () => {
               <div className={styles.postContent}>
                 <h2>{post.title}</h2>
                 <p className={styles.date}>{formatDate(post.createdAt)}</p>
-                <p className={styles.description}>{post.desc.substring(0, 100)}...</p>
+                <div
+                  className={styles.description}
+                  dangerouslySetInnerHTML={{
+                    __html: post.desc.substring(0, 100) + '...',
+                  }}
+                />
                 <div className={styles.actions}>
-                  <Link 
-                    href={`/posts/${post.slug}`} 
+                  <Link
+                    href={`/posts/${post.slug}`}
                     className={styles.viewButton}
                   >
                     View Post

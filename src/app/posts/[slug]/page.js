@@ -20,6 +20,8 @@ const SinglePage = async ({ params }) => {
 
   const data = await getData(slug);
 
+  
+  
   return (
     <div className={styles.container}>
       <div className={styles.infoContainer}>
@@ -33,7 +35,11 @@ const SinglePage = async ({ params }) => {
             )}
             <div className={styles.userTextContainer}>
               <span className={styles.username}>{data?.user.name}</span>
-              <span className={styles.date}>01.01.2024</span>
+              <span className={styles.date}>
+                {data.createdAt.substring(0, 10)} -{" "}
+              </span>
+              <span className={styles.category}>{data.catSlug}</span>
+              
             </div>
           </div>
         </div>
@@ -45,10 +51,10 @@ const SinglePage = async ({ params }) => {
       </div>
       <div className={styles.content}>
         <div className={styles.post}>
-          <div
-            className={styles.description}
-            dangerouslySetInnerHTML={{ __html: data?.desc }}
-          />
+        <div
+  className={styles.description}
+  dangerouslySetInnerHTML={{ __html: data?.desc }}
+/>
           <div className={styles.comment}>
             <Comments postSlug={slug}/>
           </div>

@@ -8,14 +8,6 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from "firebase/storage";
-import { app } from "@/utils/firebase";
-
 const WritePage = () => {
   const { status } = useSession();
   const router = useRouter();
@@ -26,13 +18,18 @@ const WritePage = () => {
   const [value, setValue] = useState("");
   const [title, setTitle] = useState("");
   const [catSlug, setCatSlug] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Editor instance
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: 'Tell your story...',
+        placeholder: 'Start writing your story here...',
+        emptyEditorClass: 'is-editor-empty',
+        emptyNodeClass: 'is-empty',
+        showOnlyWhenEditable: true,
+        showOnlyCurrent: true,
       }),
     ],
     content: '',
@@ -41,40 +38,41 @@ const WritePage = () => {
     },
   });
 
-  useEffect(() => {
-    const storage = getStorage(app);
-    const upload = () => {
-      const name = new Date().getTime() + file.name;
-      const storageRef = ref(storage, name);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log("Upload is " + progress + "% done");
-        },
-        (error) => {
-          console.error(error);
-        },
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            setMedia(downloadURL);
-          });
-        }
-      );
+    // Validate file type
+    if (!file.type.match('image.*')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size should be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setMedia(event.target.result); // This will be the Base64 string
     };
-
-    if (file) upload();
-  }, [file]);
+    reader.readAsDataURL(file);
+  };
 
   if (status === "loading") {
-    return <div className={styles.loading}>Loading...</div>;
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p>Loading editor...</p>
+      </div>
+    );
   }
 
   if (status === "unauthenticated") {
     router.push("/");
+    return null;
   }
 
   const slugify = (str) =>
@@ -86,74 +84,133 @@ const WritePage = () => {
       .replace(/^-+|-+$/g, "");
 
   const handleSubmit = async () => {
-    const res = await fetch("/api/posts", {
-      method: "POST",
-      body: JSON.stringify({
-        title,
-        desc: value,
-        img: media,
-        slug: slugify(title),
-        catSlug: catSlug || "style",
-      }),
-    });
+    if (!title.trim()) {
+      alert("Please add a title");
+      return;
+    }
+    
+    if (!value.trim()) {
+      alert("Please add some content");
+      return;
+    }
 
-    if (res.status === 200) {
-      const data = await res.json();
-      router.push(`/posts/${data.slug}`);
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        body: JSON.stringify({
+          title,
+          desc: value,
+          img: media,
+          slug: slugify(title),
+          catSlug: catSlug || "style",
+        }),
+      });
+
+      if (res.status === 200) {
+        const data = await res.json();
+        router.push(`/posts/${data.slug}`);
+      } else {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to create post");
+      }
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className={styles.container}>
-      <input
-        type="text"
-        placeholder="Title"
-        className={styles.input}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <select
-        className={styles.select}
-        onChange={(e) => setCatSlug(e.target.value)}
-      >
-        <option value="lifestyle">lifestyle</option>
-        <option value="fashion">fashion</option>
-        <option value="food">food</option>
-        <option value="culture">culture</option>
-        <option value="travel">travel</option>
-        <option value="coding">coding</option>
-      </select>
-      <div className={styles.editor}>
-        <button className={styles.button} onClick={() => setOpen(!open)}>
-          <Image src="/plus.png" alt="plus" width={16} height={16} />
-        </button>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Create New Post</h1>
+      </div>
 
-        {open && (
-          <div className={styles.add}>
-            <input
-              type="file"
-              id="image"
-              onChange={(e) => setFile(e.target.files[0])}
-              style={{ display: "none" }}
+      <div className={styles.formGroup}>
+        <input
+          type="text"
+          placeholder="Your amazing title..."
+          className={styles.input}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <div className={styles.selectContainer}>
+          <select
+            className={styles.select}
+            onChange={(e) => setCatSlug(e.target.value)}
+            defaultValue=""
+          >
+            <option value="" disabled>Select a category</option>
+            <option value="lifestyle">Lifestyle</option>
+            <option value="fashion">Fashion</option>
+            <option value="food">Food</option>
+            <option value="culture">Culture</option>
+            <option value="travel">Travel</option>
+            <option value="coding">Coding</option>
+          </select>
+          <span className={styles.selectArrow}>▼</span>
+        </div>
+      </div>
+
+      <div className={styles.editorContainer}>
+        <div className={styles.toolbar}>
+          <button 
+            className={`${styles.toolbarButton} ${open ? styles.active : ''}`} 
+            onClick={() => setOpen(!open)}
+            aria-label="Add media"
+          >
+            <Image src="/plus.png" alt="plus" width={20} height={20} />
+          </button>
+
+          {open && (
+            <div className={styles.mediaOptions}>
+              <input
+                type="file"
+                id="image"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: "none" }}
+              />
+              <label htmlFor="image" className={styles.mediaButton}>
+                <Image src="/image.png" alt="Add image" width={20} height={20} />
+                <span>Image</span>
+              </label>
+            </div>
+          )}
+        </div>
+
+        {media && (
+          <div className={styles.imagePreview}>
+            <img 
+              src={media} 
+              alt="Preview" 
+              className={styles.previewImage}
             />
-            <label htmlFor="image" className={styles.addButton}>
-              <Image src="/image.png" alt="plus" width={16} height={16} />
-            </label>
-
-            <button className={styles.addButton}>
-              <Image src="/external.png" alt="plus" width={16} height={16} />
-            </button>
-
-            <button className={styles.addButton}>
-              <Image src="/video.png" alt="plus" width={16} height={16} />
-            </button>
           </div>
         )}
 
-        <EditorContent editor={editor} className={styles.textArea} />
+        <div className={styles.editorContent}>
+          <EditorContent editor={editor} className={styles.textArea} />
+        </div>
       </div>
-      <button className={styles.publish} onClick={handleSubmit}>
-        Publish
-      </button>
+
+      <div className={styles.footer}>
+        <button 
+          className={styles.publishButton} 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <span className={styles.spinnerSmall}></span>
+              Publishing...
+            </>
+          ) : (
+            'Publish'
+          )}
+        </button>
+      </div>
     </div>
   );
 };
