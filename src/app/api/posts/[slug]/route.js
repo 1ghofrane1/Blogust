@@ -88,6 +88,7 @@ export const PUT = async (req, { params }) => {
 };
 
 // DELETE A POST
+// DELETE A POST WITH COMMENT CLEANUP
 export const DELETE = async (req, { params }) => {
   const { slug } = params;
   const session = await getAuthSession();
@@ -118,12 +119,18 @@ export const DELETE = async (req, { params }) => {
       );
     }
 
+    // Delete comments associated with this post
+    await prisma.comment.deleteMany({
+      where: { postSlug: slug },
+    });
+
+    // Now delete the post itself
     await prisma.post.delete({
       where: { slug },
     });
 
     return new NextResponse(
-      JSON.stringify({ message: "Post deleted!" }, null, 2),
+      JSON.stringify({ message: "Post and its comments deleted!" }, null, 2),
       { status: 200 }
     );
   } catch (err) {

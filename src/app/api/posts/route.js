@@ -7,6 +7,7 @@ export const GET = async (req) => {
   const page = parseInt(searchParams.get("page") || "1");
   const cat = searchParams.get("cat");
   const userEmail = searchParams.get("userEmail");
+  
 
   const ppp = 2;
 

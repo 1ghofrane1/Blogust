@@ -1,13 +1,42 @@
-.title{
-  background-color: coral;
-  color: white;
-  padding: 5px 10px;
+.title {
+  color: #fff;
+  padding: 12px 20px;
   text-align: center;
   text-transform: capitalize;
+  font-size: 32px;
+  font-weight: 600;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  margin-bottom: 30px;
+  letter-spacing: 0.5px;
 }
 
-.content{
+.lifestyle {
+  background-color: #57c4ff31;
+}
+.food {
+  background-color: #da85c731;
+}
+.culture {
+  background-color: #7fb88133;
+}
+.coding {
+  background-color: #ffa55736;
+}
+.travel {
+  background-color: #9a57ff31;
+}
+.fashion {
+  background-color: #ff575731;
+}
+.music {
+  background-color: #ff57a031;
+}
+
+.content {
   display: flex;
-  gap: 50px;
+  gap: 40px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
-

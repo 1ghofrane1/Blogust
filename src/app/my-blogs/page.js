@@ -42,12 +42,12 @@ const MyBlogsPage = () => {
   };
 
   const handleDelete = async (slug) => {
-    if (confirm("Are you sure you want to delete this post?")) {
+    if (confirm("Deleting this post will also remove all associated comments. Are you sure?")) {
       try {
         const res = await fetch(`/api/posts/${slug}`, {
           method: "DELETE",
         });
-
+  
         if (res.ok) {
           fetchUserPosts();
         } else {
@@ -60,6 +60,7 @@ const MyBlogsPage = () => {
       }
     }
   };
+  
 
   if (status === 'loading' || loading) {
     return <div className={styles.loading}>Loading...</div>;
