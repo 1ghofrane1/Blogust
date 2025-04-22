@@ -50,3 +50,4 @@ const MenuPosts = ({ withImage }) => {
 };
 
 export default MenuPosts;
+
